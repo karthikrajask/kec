@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Map</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <style>
+        /* Styling for the map */
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        /* Styling for the distance display */
+        #distanceDisplay {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Live Location Map</h1>
+    <div id="map"></div>
+    <div id="distanceDisplay">Distance between live location and starting point will be displayed here.</div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+
+    <!-- JavaScript code for handling the map and locations -->
+    <script>
+        // Your Mapbox access token
+        const mapboxAccessToken = 'pk.eyJ1IjoiZ29rdWwwMyIsImEiOiJjbHYyMDExeHgwNmN3Mm9tdWhoenhsMXozIn0.ib3k6rOPdjI0k4iMSbm28w';
+
+        // Initialize the map with a default view (latitude, longitude, zoom level)
+        const map = L.map('map').setView([11.4363, 77.7232], 12); // Starting point: First location in the array
+
+        // Add a tile layer to the map (Mapbox Streets)
+        L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/256/{z}/{x}/{y}@2x?access_token=${mapboxAccessToken}`, {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Define the locations along the route
+        const locations = [
+            { name: 'Teachers colony', lat: 11.4261, lon: 77.6331 },
+            { name: 'Gowri Stop', lat: 11.4122, lon: 77.6466 },
+            { name: 'Kon Stop', lat: 11.4012, lon: 77.6581 },
+            { name: 'Colony Hospital', lat: 11.3852, lon: 77.6743 },
+            { name: 'Pallipalayam Corner', lat: 11.3668, lon: 77.6989 },
+            { name: 'Anangur Pirivu', lat: 11.3594, lon: 77.7139 },
+            { name: 'Rajam Theatre', lat: 11.3382, lon: 77.7273 },
+            { name: 'Power Office', lat: 11.3183, lon: 77.7224 },
+            { name: 'Katteri Pirivu', lat: 11.3114, lon: 77.7462 },
+            { name: 'KPM Bus Stand', lat: 11.3337, lon: 77.7174 }
+        ];
+
+        // Add markers for each location
+        locations.forEach(location => {
+            L.marker([location.lat, location.lon]).addTo(map)
+                .bindPopup(location.name);
+        });
+
+        // Function to handle successful geolocation
+        function showLocation(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            // Update the map view to the user's current location
+            map.setView([lat, lon], 12);
+
+            // Add a marker at the user's location with a popup
+            const userMarker = L.marker([lat, lon]).addTo(map)
+                .bindPopup('You are here!')
+                .openPopup();
+
+            // Calculate the distance between the user's location and the starting point
+            const distance = calculateDistance(lat, lon, locations[0].lat, locations[0].lon);
+            const distanceDisplay = document.getElementById('distanceDisplay');
+            distanceDisplay.textContent = `Distance between live location and starting point is approximately ${distance.toFixed(2)} kilometers.`;
+
+            // Draw polylines between consecutive locations to represent the route segments
+            for (let i = 0; i < locations.length - 1; i++) {
+                const startPoint = [locations[i].lat, locations[i].lon];
+                const endPoint = [locations[i + 1].lat, locations[i + 1].lon];
+
+                // Call the Mapbox Directions API to get a route between the starting and ending points
+                const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint[1]},${startPoint[0]};${endPoint[1]},${endPoint[0]}.json?access_token=${mapboxAccessToken}&geometries=geojson&steps=true`;
+
+                fetch(directionsUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Display the route on the map
+                        const route = data.routes[0];
+                        const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        L.polyline(routeCoordinates, { color: 'blue' }).addTo(map);
+                    })
+                    .catch(error => {
+                        console.error('Error occurred while retrieving route:', error);
+                    });
+            }
+        }
+
+        // Function to handle geolocation errors
+        function handleError(error) {
+            console.error('Error occurred while retrieving location:', error);
+        }
+
+        // Check if geolocation is available
+        if (navigator.geolocation) {
+            // Use the watchPosition() method to continuously track the user's location
+            navigator.geolocation.watchPosition(showLocation, handleError);
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+
+        // Function to calculate distance between two points using the Haversine formula
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const toRadians = angleInDegrees => (angleInDegrees * Math.PI) / 180;
+
+            // Convert latitudes and longitudes from degrees to radians
+            const lat1Rad = toRadians(lat1);
+            const lon1Rad = toRadians(lon1);
+            const lat2Rad = toRadians(lat2);
+            const lon2Rad = toRadians(lon2);
+
+            // Haversine formula
+            const dlat = lat2Rad - lat1Rad;
+            const dlon = lon2Rad - lon1Rad;
+            const a = Math.sin(dlat / 2) * Math.sin(dlat / 2) +
+                Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                Math.sin(dlon / 2) * Math.sin(dlon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c; // Distance in kilometers
+
+            return distance;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaflet.js Example: Locations, Routes, Directions, and Animated Marker</title>
+  <!-- Include Bootstrap CSS -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Include Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <!-- Include Leaflet Routing Machine CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <style>
+    /* Custom CSS styling */
+    #map {
+      height: 600px;
+    }
+    .bus-stop {
+      background-color: #f8f9fa;
+      padding: 5px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+    }
+    .custom-div-icon {
+      background: transparent;
+      border: none;
+    }
+    .marker-pin {
+      width: 30px;
+      height: 30px;
+      border-radius: 50% 50% 50% 0;
+      background: red;
+      position: absolute;
+      transform: rotate(-45deg);
+      left: 50%;
+      top: 50%;
+      margin: -15px 0 0 -15px;
+    }
+    .marker-pin::after {
+      content: '';
+      width: 24px;
+      height: 24px;
+      margin: 3px 0 0 3px;
+      background: white;
+      position: absolute;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+    <div class="container mt-3">
+        <div class="row">
+          <div class="col-lg-12">
+            <!-- Table will be appended here -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Create a div to hold the map -->
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12">
+            <div id="map" style="border: blue;"></div>
+            <!-- Button to toggle the 2km radius circle -->
+            <button id="toggleCircleBtn" class="btn btn-primary mt-3">Toggle 2km Radius Circle</button>
+          </div>
+        </div>
+      </div>
+      
+
+<!-- Include Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<!-- Include Leaflet Routing Machine JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script>
+  // Initialize the map
+  var map = L.map('map').setView([11.444571247784047, 77.71420795909367], 10); // Set initial coordinates and zoom level
+
+  // Add a base layer to the map (e.g., OpenStreetMap)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Array of location coordinates and names for Bus 1
+  var bus1Locations = [
+    [11.444571247784047, 77.71420795909367, "Katteri Pirivu"],
+    [11.444167, 77.711667, "Power Office"],
+    [11.4435, 77.707389, "Rajam Theatre"],
+    [11.442472, 77.700778, "Aanangur Pirivu"],
+    [11.44246650060728, 77.69422877126802, "KPM Bus Stand"],
+    [11.441861, 77.696806, "Pallipalayam Corner"],
+    [11.438778, 77.696667, "Colony Hospital"],
+    [11.434861, 77.694222, "Kon Stop"],
+    [11.431889, 77.691139, "Gowri Stop"],
+    [11.432417, 77.694194, "Teachers Colony"],
+    [11.274447333782497, 77.60709173997549, "KEC"]
+  ];
+
+  // Array of location coordinates and names for Bus 2
+  var bus2Locations = [
+    [11.479895, 77.847229, "Kaliyanur"],
+    [11.479545, 77.837940, "AST Bunk"],
+    [11.473083, 77.830850, "Chinna Goundanur"],
+    [11.457611756065829, 77.82877667230511, "ICL"],
+    [11.455900748507906, 77.81046590515648, "Pachampalayam"],
+    [11.447315318967048, 77.74162698499637, "Valayakaranur"],
+    [11.445546021770271, 77.72740929394291, "Vatamalai"],
+    [11.436474, 77.714611, "Kotamedu Bypass"],
+    [11.415394384413412, 77.67598995503708,"Sree Krishna Mission"],
+    [11.274311, 77.605835, "Kongu Engineering College"]
+  ];
+
+  // Array of location coordinates and names for Bus 3
+  var bus3Locations = [
+    [11.657333, 77.822500, "Oruvapati"],
+    [11.640250, 77.823139, "Chittode"],
+    [11.618972, 77.803278, "Kallukadai"],
+    [11.585552974409362, 77.83544886593288, "Edappadi"],
+    [11.453778, 77.696389, "Cauvery Nagar"],
+    [11.441833, 77.682972, "Pookadai Corner"],
+    [11.274311, 77.605835, "KEC"]
+  ];
+
+  // Create a custom icon for Bus 1
+  var bus1Icon = L.icon({
+    iconUrl: 'static/images.png', // Placeholder bus icon URL for Bus 1
+    iconSize: [32, 32],      // Size of the icon
+    iconAnchor: [16, 32]      // Anchor point of the icon (center bottom)
+  });
+
+  // Create a custom icon for Bus 2
+  var bus2Icon = L.icon({
+    iconUrl: 'static/images.png', // Placeholder bus icon URL for Bus 2
+    iconSize: [32, 32],      // Size of the icon
+    iconAnchor: [16, 32]      // Anchor point of the icon (center bottom)
+  });
+
+  // Create a custom icon for Bus 3
+  var bus3Icon = L.icon({
+    iconUrl: 'static/images.png', // Placeholder bus icon URL for Bus 3
+    iconSize: [32, 32],      // Size of the icon
+    iconAnchor: [16, 32]      // Anchor point of the icon (center bottom)
+  });
+
+  // Add markers and animate markers for Bus 1
+  addMarkersAndAnimate(bus1Locations, bus1Icon, 'red', 'Bus 1');
+
+  // Add markers and animate markers for Bus 2
+  addMarkersAndAnimate(bus2Locations, bus2Icon, 'blue', 'Bus 2');
+
+  // Add markers and animate markers for Bus 3
+  addMarkersAndAnimate(bus3Locations, bus3Icon, 'green', 'Bus 3');
+
+  // Add marker for live location
+  var liveMarker = L.marker([11.4289, 77.6751]).addTo(map);
+
+  // Add circle around live location with radius of 2 kilometers
+  var circle = L.circle([11.4289, 77.6751], {
+    color: 'blue',
+    fillColor: 'blue',
+    fillOpacity: 0.3,
+    radius: 2000,
+    className: 'circle', // Adding a class to the circle for easy reference
+    visible: false
+  }).addTo(map);
+
+  // Variable to track whether the circle is visible
+  var isCircleVisible = false;
+
+  // Function to add markers and animate markers for a bus
+  function addMarkersAndAnimate(locations, icon, color, label) {
+    // Add markers for bus stops
+  
+// Add markers for bus stops and bind popups with route information
+for (var i = 0; i < locations.length; i++) {
+  var marker = L.marker([locations[i][0], locations[i][1]], {icon: L.divIcon({className: 'custom-div-icon', html: '<div style="background-color: ' + color + ';" class="marker-pin"></div>'})}).addTo(map);
+  marker.bindPopup(locations[i][2]); // Bind popup with location name
+}
+
+// Add the marker with the custom icon for the first location
+var marker = L.marker([locations[0][0], locations[0][1]], {icon: icon}).addTo(map);
+marker.bindPopup(label); 
+    // Animate the marker along the route
+    var index = 0;
+    var markerInterval = setInterval(function() {
+      if (index >= locations.length - 1) {
+        clearInterval(markerInterval); // Stop animation when all locations have been reached
+        return;
+      }
+
+      var startPoint = L.latLng(locations[index]);
+      var endPoint = L.latLng(locations[index + 1]);
+
+      var route = L.Routing.control({
+        waypoints: [startPoint, endPoint],
+        routeWhileDragging: true,
+        show: false,
+        createMarker: function() {},
+        fitSelectedRoutes: false // Prevent auto-zooming
+      });
+
+      route.on('routesfound', function(e) {
+        var routeCoordinates = e.routes[0].coordinates;
+        var stepCount = routeCoordinates.length;
+        var duration = 3000; // Duration of each step in milliseconds
+
+        var step = 0;
+
+        var animateStep = function() {
+          var progress = step / stepCount;
+          var latLng = routeCoordinates[step];
+          marker.setLatLng(latLng);
+
+          step++;
+
+          if (step < stepCount) {
+            setTimeout(animateStep, duration / stepCount);
+          } else {
+            index++; // Move to the next location
+            if (index === locations.length - 1) {
+              // Add label to the marker at the last stop
+              marker.bindPopup(label).openPopup();
+            }
+          }
+
+          // Check if the bus is within the circle radius
+          checkBusInRadius(marker, circle, isCircleVisible);
+        };
+
+        animateStep();
+      });
+
+      route.addTo(map);
+    }, 4000); // Interval between each animation loop
+  }
+
+  // Function to check if the bus is within the circle radius
+  function checkBusInRadius(busMarker, circle, isCircleVisible) {
+    // Check if the circle is visible and the button is toggled on
+    if (isCircleVisible) {
+      var busLatLng = busMarker.getLatLng();
+      var circleCenter = circle.getLatLng();
+      var radius = circle.getRadius();
+
+      var distance = busLatLng.distanceTo(circleCenter);
+
+      // If the distance between the bus marker and the circle center is less than the radius, the bus is within the circle
+      if (distance <= radius) {
+        // Change marker appearance to indicate it's within the radius
+        busMarker.setIcon(L.icon({
+          iconUrl: 'static/img.png', // Change to the active icon URL
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        }));
+      } else {
+        // Change marker appearance to default if it's outside the radius
+        busMarker.setIcon(L.icon({
+          iconUrl: 'static/images.png', // Change back to the default bus icon URL
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        }));
+      }
+    }
+  }
+
+  // Function to toggle the visibility of the circle
+  function toggleCircleVisibility() {
+    var circle = document.querySelector('.circle');
+    if (circle) {
+      if (circle.style.display === 'none') {
+        circle.style.display = 'block';
+        isCircleVisible = true;
+      } else {
+        circle.style.display = 'none';
+        isCircleVisible = false;
+      }
+    }
+  }
+
+  // Attach click event listener to the button
+  document.getElementById('toggleCircleBtn').addEventListener('click', toggleCircleVisibility);
+
+  function generateTimings(startingTime, interval, numStops) {
+    let timings = [];
+    let currentTime = startingTime;
+
+    for (let i = 0; i < numStops; i++) {
+        let hours = Math.floor(currentTime / 60);
+        let minutes = currentTime % 60;
+
+        // Format the time as HH:MM
+        let formattedTime = ('0' + hours).slice(-2) + ':' + ('0' + minutes).slice(-2);
+        
+        // Push the formatted time to the timings array
+        timings.push(formattedTime);
+
+        // Increment the current time by the interval
+        currentTime += interval;
+    }
+
+    return timings;
+    }
+
+    var timings = generateTimings(420, 2, bus1Locations.length);
+
+    // Create a table
+    var table = '<table><tr><th>Stops</th><th>Timing</th></tr>';
+
+    // Populate the table with stop names and corresponding timings
+    for (let i = 0; i < bus1Locations.length; i++) {
+        table += '<tr><td>' + bus1Locations[i][2] + '</td><td>' + timings[i] + '</td></tr>';
+    }
+
+    table += '</table>';
+    // Select the div to hold the table
+    var tableDiv = document.querySelector('.container:first-of-type .col-lg-12');
+
+    // Append the table to the tableDiv
+    tableDiv.innerHTML = table;
+    // Append the table to the HTML body
+    document.body.innerHTML = table;
+</script>
+</body>
+</html>
